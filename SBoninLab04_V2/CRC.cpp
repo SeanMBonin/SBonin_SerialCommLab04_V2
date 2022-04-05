@@ -1,5 +1,5 @@
 #include "CRC.h"
-
+#include <iostream>
 bool CRC::crcCheck(unsigned char passBuff[], int lt)
 {
 	if (CRC::crcAdd(passBuff, lt) == 0) { return true; }
@@ -23,6 +23,7 @@ int CRC::crcAdd(unsigned char passBuff[], int lt)
 		for (int bt = 0; bt < 8; bt++)
 		{
 			reg <<= 1;
+
 			if ((crcBuff[i] << bt) & 0x80)
 			{
 				reg++;
@@ -34,5 +35,6 @@ int CRC::crcAdd(unsigned char passBuff[], int lt)
 			}
 		}
 	}
+	std::cout << std::hex << "CRC Val: " << reg << std::endl;
 	return reg;
 }

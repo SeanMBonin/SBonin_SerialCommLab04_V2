@@ -38,7 +38,7 @@ int ReadWrite::processRead(unsigned char rdBuff[], int lth)
 	//if data read and data in the buffer don't match, throw error
 	if (lth != rdBuff[1])
 	{
-		//return -2; //I'm using -2 as a mismatching data error
+		return -2; //I'm using -2 as a mismatching data error
 	}
 
 	//The buffer passed in is copied to the class scope buffer
@@ -54,7 +54,8 @@ int ReadWrite::processRead(unsigned char rdBuff[], int lth)
 	}
 	else
 	{
-		return -3; //-3 signafying CRC check failure
+		//return -3; //-3 signafying CRC check failure
+		printRead(lth);
 	}
 
 	return lth;
@@ -65,21 +66,21 @@ int ReadWrite::processWrite(unsigned char wrtBuff[])
 	//Copy buffer, clear original, detect length
 	int l = 0;
 	unsigned char crcByte;
+	unsigned char buffer[256]{};
 	while (wrtBuff[l] != '\0')
 	{
-		_wrtBuff[l + 2] = wrtBuff[l]; //Leaves the array shifted over 2, leaves room for SOH and length
-		wrtBuff[l] = '\0';
+		buffer[l + 2] = wrtBuff[l]; //Leaves the array shifted over 2, leaves room for SOH and length
 		l++;
 	}
 	l += 3; //3 extra bytes for SOH, lth, CRC
 	//Add SOH, lth, and CRC
-	_wrtBuff[0] = SOH;
-	_wrtBuff[1] = l;
+	buffer[0] = SOH;
+	buffer[1] = l;
 
-	crcByte = _crc.crcAdd(_wrtBuff, l);
-	_wrtBuff[l - 1] = crcByte;
+	crcByte = _crc.crcAdd(buffer, l);
+	buffer[l - 1] = crcByte;
 
-	if (_cPort->writePort(_wrtBuff) == l)
+	if (_cPort->writePort(buffer) == l)
 	{
 		//correct length written
 		return l;

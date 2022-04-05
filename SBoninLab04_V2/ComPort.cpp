@@ -33,8 +33,8 @@ ComPort::ComPort(std::string name)
 
 	//Define my CommTimeout structure
 	_cto.ReadIntervalTimeout = MAXDWORD;
-	_cto.ReadTotalTimeoutMultiplier = 0;	//The three read intervals setup like this cause the ReadFile() function
-	_cto.ReadTotalTimeoutConstant = 0;		//To only read what is immediately available and return true regardless of empty buffer
+	_cto.ReadTotalTimeoutMultiplier = 100;	//The three read intervals setup like this cause the ReadFile() function
+	_cto.ReadTotalTimeoutConstant = 100;		//To only read what is immediately available and return true regardless of empty buffer
 	_cto.WriteTotalTimeoutConstant = 100;
 	_cto.WriteTotalTimeoutMultiplier = 100;	//the two write timeouts are somewhat arbitrarily set.
 
@@ -155,38 +155,39 @@ int ComPort::readPort(unsigned char passBuff[])
 {
 	WaitForSingleObject(_eventRead, INFINITE);
 	int lth = 0, attempt = 0;
+	unsigned char buffer[256]{};
 	SetCommMask(_hPort, EV_RXCHAR | EV_ERR); //receive character event (might be removed)
 
 	//Read the buffer (if all of buffer isn't present at read, will be missed)
 	//comtimeouts will only read what is immediately availabe for reading
 	//Find SOH
-	while (_readBuffer[0] != 1)
+	while (buffer[0] != 1)
 	{
 		attempt++;
-		if (ReadFile(_hPort, &_readBuffer[0], 1, &_bytesRead, NULL))
+		if (ReadFile(_hPort, &buffer[0], 1, &_bytesRead, NULL))
 		{
 			//Sets the file pointer ahead by 1, program won't work without
 			SetFilePointer(_hPort, 1, NULL, 1);
 		}
 
 		//Keep from locking up waiting for SOH
-		if (attempt > 9)
+		if (attempt > 9 && buffer[0] != 1)
 		{
 			return 0;
 		}
 	}
 
 	//Find length
-	if (ReadFile(_hPort, &_readBuffer[1], 1, &_bytesRead, NULL))
+	if (ReadFile(_hPort, &buffer[1], 1, &_bytesRead, NULL))
 	{
 		//Sets the file pointer ahead by 1, program won't work without
 		SetFilePointer(_hPort, 1, NULL, 1);
-		lth = _readBuffer[1];
+		lth = buffer[1];
 	}
 
 	for (int ndx = 2; ndx < lth; ndx++)
 	{
-		if (ReadFile(_hPort, &_readBuffer[ndx], 1, &_bytesRead, NULL))
+		if (ReadFile(_hPort, &buffer[ndx], 1, &_bytesRead, NULL))
 		{
 			SetFilePointer(_hPort, 1, NULL, 1);
 			//printf("read file\n");
@@ -199,13 +200,12 @@ int ComPort::readPort(unsigned char passBuff[])
 
 	for (int ndx = 0; ndx < lth; ndx++)
 	{
-		passBuff[ndx] = _readBuffer[ndx];
-		_readBuffer[ndx] = '\0';
+		passBuff[ndx] = buffer[ndx];
 	}
 
 	if (lth > 3)
 	{
-		return passBuff[1];
+		return lth;
 	}
 	else
 	{

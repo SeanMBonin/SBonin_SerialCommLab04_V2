@@ -93,7 +93,7 @@ void reader(ComPort* cPort, ReadWrite* rdWrt, BOOL* _quit)
 			errorDet = rdWrt->processRead(rdBuffer, length);
 			if (errorDet < 0)
 			{
-				std::cout << "Read Error: " << errorDet << std::endl;
+				std::cout << "Read Error: " <<std::dec << errorDet << std::hex << std::endl;
 			}
 		}
 
@@ -161,6 +161,10 @@ int main()
 			if (rdWrt.processWrite(wrtBuff) == -4)
 			{
 				std::cout << "Error writing to port. Length of message and characters written non-matching" << std::endl;
+			}
+			for (int i = 0; i < 253; i++)
+			{
+				wrtBuff[i] = '\0';
 			}
 		}		
 	}
